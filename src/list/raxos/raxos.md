@@ -34,48 +34,7 @@ TODO: remove concept History quorum
 
 
 
-## History Read Set
-
-对于
-`fn read(pt: PTime, nodes: Vec<Node>) -> History`,
-对读到的 History 的任一子集 H, 我们可以称这个`node_set` 是这个`History`的一个 ReadSet. 表示这个`History` 可以通过这个`node_set`读到.
-
-对系统的某个特定的状态, Histroy 的 ReadSet 定义为可以读到这个 History 的一个节点的集合.
-
-例如, 在下面,
-
-- `read({1})` 返回: `[History{E1, E2, E3}]`,
-- `read({1, 2})` 返回: `[History{E1, E2, E3}, History{E1, E2}]`,
-- `read({3})` 返回空 `ø`.
-
-例如, 在下面这个 3 节点的系统中, `History{E1,E2,E3}`的 ReadSet, 即能读到它的节点的集合, 有 4 个, 是所有包括 node-1 节点的节点集合:
-
-`{1}, {1,2}, {1,2,3}, {1,3}`
-
-例如`read({1})` 会返回`History{E1,E2,E3}`在结果里,
-`read({1,3})` 也会返回`History{E1,E2,E3}`在结果里.
-
-但是`read({3})` 不会返回`History{E1,E2,E3}`, 所以 `{3}` 不是`History{E1,E2,E3}` 的一个 ReadSet
-
-而`History{E1,E2}`的 ReadSet 有 5 个, 除了`{3}` 之外的所有非空节点集合都是它的 ReadSet:
-`{1}, {1,2}, {1,2,3}, {1,3}, {2,3}`,
-
-例如`read({2,3})` 会返回`History{E1,E2}`在结果里.
-
-![](history-read-set.excalidraw.png)
-
-对于返回的结果, 我们也可以将 `Vec<History>`里的元素做一个并集来简化表示,
-例如, 上图中, `read({1, 2})` 可以看做返回了一个 History: `History{E1, E2, E3}`
-
-而在下图中, 我们可以认为`read({1, 2})` 返回了一个树形的 History:
-
-```
- .->E4
-E1->E2->E3
-```
-
-![](history-read-set-union.excalidraw.png)
-
+[[desc-History Read Set]]
 
 [[def-Read-Quorum-Set]]
 
@@ -237,6 +196,8 @@ node-1 本地将已有 History 跟新写入的 History 合并了, 本地存储�
 
 ![](linear-rw.excalidraw.png)
 
+protocol-write-prepare
+
 ## Write Prepare
 
 现在 write 保证了不覆盖已有的 History, 且写到了`write_quorum_set`,
@@ -305,29 +266,17 @@ node-1 本地将已有 History 跟新写入的 History 合并了, 本地存储�
 我举这个例子是为了说明, Time 的每个维度之间的类型不能假设是一样的,
 即不支持加法, 但可以支持乘法. 这将会引出后面的有趣的结论.
 
+[[example-crdt]]
 
-# 多维偏序时间应用例子
-
-假设有一个 key value 的存储系统，在这个系统里面，每个 key 都代表一个不同的维度。然后我们的时间，就是一个多维的向量时间内的比较，就是多为向量的比较。
-
-我们先从一个简单的场景来看, 假设这个系统里只有2个key:
-x 和 y,
-这个系统的虚拟时间`T`定义为: 一个操作涉及的key的对应的维度上值为i的向量.
-例如, `let x = 2` 的T为`{x:i}`,
-`let y = 3`的T为`{y:i}`;
-`let x = x + y`的T为`{x:i, y:i}`
-T的比较关系定义为公共分量的大小比较:
-例如, `{x:1} < {x:2,y:2} < {y:3}`, 但`{x:1}` `{y:2}` 之间没有大小关系, 因为它们没有公共分量.
-这个虚拟时间定义了哪些Event可以互补影响的执行, 哪些之间必须有确定的顺序, 以及这些顺序是什么(有`i` 定义).
+[[example-2d-non-transitive-time]]
 
 
-![](crdt.excalidraw.png)
+[[exmaple-crdt-define]]
 
-应用我们的Abstract Paxos到这个系统, 它将构建一个冲突自适应的Multi Master一致性协议.
+[[example-crdt-implementation]]
+
 
 例如
-
-注意, 我们时间是对应到DAG的结构的, `{x:2,y:2} < {y:3}` 中的 `{y:3}` 顶点和 一个独立的 `{y:3}` 顶点代表的不是一个时间.
 
 如果T不是**传递的**, 那么第一阶段必须在一个read-quorum-set上阻止要写入的History上所有的T, 而不是只有最大的一个T.因为不能通过T来防止之前的顶点被写入.
 而在第二阶段, 也必须逐个判断要写入的History的每个T是否小于已经被阻止的T, 而不仅仅是要写入的History的Maximal T.
