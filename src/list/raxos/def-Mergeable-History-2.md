@@ -22,3 +22,19 @@ def-Mergeable-History-2
 单副本,或单机环境中, 对整个系统的读是一个简单的操作: `fn read(ptime: PTime) -> History`.
 但是在多副本的分布式环境中, 读会读到多个副本, 读操作可以看做这样一个函数: `fn read(ptime: PTime, node_set: Vec<Node>) -> Vec<History>`:
 它从多个节点`node_set`中读 History 副本, 并返回一个 History 的集合.
+
+
+mergeable 比较方法:
+
+
+给定的History, h 和 一个时刻T,
+
+// TODO:
+根据 [[def-Mergeable-History]]
+
+对h中的每个待加入的时间Tᵢ,:
+- 如果存在`Tᵢ < T`, 则h是不可写的, 因为一个read请求会选择包含T的history而舍弃Tᵢ
+- 如果不存在`Tᵢ < T`, 则h是可写的,因为一个read操作会把h包含在自己的结果中.
+
+
+
